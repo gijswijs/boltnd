@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lntest"
 	"github.com/stretchr/testify/require"

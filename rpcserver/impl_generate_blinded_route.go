@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/lnwire"
 	lndwire "github.com/lightningnetwork/lnd/lnwire"
 	"google.golang.org/grpc/codes"

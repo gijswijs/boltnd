@@ -5,8 +5,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/carlakc/boltnd/offersrpc"
-	"github.com/carlakc/boltnd/testutils"
+	"github.com/gijswijs/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/testutils"
 	"github.com/lightningnetwork/lnd/lntest"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"

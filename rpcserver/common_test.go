@@ -3,9 +3,9 @@ package rpcserver
 import (
 	"testing"
 
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/offersrpc"
-	"github.com/carlakc/boltnd/testutils"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/testutils"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

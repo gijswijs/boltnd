@@ -11,8 +11,8 @@ import (
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/routes"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/routes"
 	"github.com/lightninglabs/lndclient"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	lndwire "github.com/lightningnetwork/lnd/lnwire"

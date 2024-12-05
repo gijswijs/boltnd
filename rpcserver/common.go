@@ -2,8 +2,8 @@ package rpcserver
 
 import (
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/offersrpc"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

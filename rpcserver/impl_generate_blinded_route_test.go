@@ -5,8 +5,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/carlakc/boltnd/offersrpc"
-	"github.com/carlakc/boltnd/testutils"
+	"github.com/gijswijs/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/testutils"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	lndwire "github.com/lightningnetwork/lnd/lnwire"
 	"github.com/stretchr/testify/mock"

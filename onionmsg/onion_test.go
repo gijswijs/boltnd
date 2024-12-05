@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/testutils"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/testutils"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	"github.com/stretchr/testify/require"
 )

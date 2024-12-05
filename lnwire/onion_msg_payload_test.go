@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/carlakc/boltnd/testutils"
+	"github.com/gijswijs/boltnd/testutils"
 	"github.com/lightningnetwork/lnd/tlv"
 	"github.com/stretchr/testify/require"
 )

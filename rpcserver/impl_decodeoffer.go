@@ -7,9 +7,9 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/offers"
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/offers"
+	"github.com/gijswijs/boltnd/offersrpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

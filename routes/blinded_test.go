@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/testutils"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/testutils"
 	"github.com/lightninglabs/lndclient"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	lndwire "github.com/lightningnetwork/lnd/lnwire"

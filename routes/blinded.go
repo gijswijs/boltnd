@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/carlakc/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/lnwire"
 	"github.com/lightninglabs/lndclient"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	lndwire "github.com/lightningnetwork/lnd/lnwire"
@@ -162,12 +162,12 @@ type canRelayFunc func(*lndclient.NodeInfo) error
 
 // getRelayingPeers returns a list of peers that would be suitable for relaying
 // onion messages:
-// 1. We have a channel with the peer: assuming that onion messages will be
-//    predominantly relayed on channel-lines.
-// 2. The channel is active: an active channel indicates that the peer is
-//    online and will likely be able to relay messages.
-// 3. The node satisfies the canRelay closure passed in (provided as a param
-//    for easy testing).
+//  1. We have a channel with the peer: assuming that onion messages will be
+//     predominantly relayed on channel-lines.
+//  2. The channel is active: an active channel indicates that the peer is
+//     online and will likely be able to relay messages.
+//  3. The node satisfies the canRelay closure passed in (provided as a param
+//     for easy testing).
 func getRelayingPeers(ctx context.Context, lnd Lnd,
 	canRelay canRelayFunc) ([]*lndclient.NodeInfo, error) {
 
@@ -474,9 +474,13 @@ type blindedStart struct {
 // Given a path N(0), N(1), N(2), ... , N(k), the blinded route will have
 // the following entries.
 // [0] NodePub: N(0)
-//     Payload: TLV( next_node_id : N(1) )
+//
+//	Payload: TLV( next_node_id : N(1) )
+//
 // [1] NodePub: N(1)
-//     Payload: TLV( next_node_id: N(2) )
+//
+//	Payload: TLV( next_node_id: N(2) )
+//
 // ...
 // [k] NodePub: N(k)
 //
@@ -485,7 +489,8 @@ type blindedStart struct {
 // in the final payload of the path:
 // ...
 // [k] NodePub: N(K)
-//     Payload: TLV( next_node_id: intro , override: blinding_point )
+//
+//	Payload: TLV( next_node_id: intro , override: blinding_point )
 //
 // An encodePayload function is passed in as a parameter for easy mocking in
 // tests.
