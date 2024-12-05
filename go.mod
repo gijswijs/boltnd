@@ -8,7 +8,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.1
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
-	github.com/lightninglabs/lndclient v0.15.0-10
+	github.com/lightninglabs/lndclient v0.18.4-7
 	github.com/lightningnetwork/lightning-onion v1.2.0
 	github.com/lightningnetwork/lnd v0.15.0-beta.rc1
 	github.com/lightningnetwork/lnd/tlv v1.0.3
