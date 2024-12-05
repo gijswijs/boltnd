@@ -5,22 +5,22 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/lntest"
 	"github.com/stretchr/testify/require"
 )
 
 // ReplyMessageTestCase tests sending of onion messages to reply paths.
-func ReplyMessageTestCase(t *testing.T, net *lntest.NetworkHarness) {
-	offersTest := setupForBolt12(t, net)
+func ReplyMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
+	offersTest := setupForBolt12(t, ht)
 	defer offersTest.cleanup()
 
 	ctxb := context.Background()
 
 	// Setup our network with the following topology:
 	// Alice -- Bob -- Carol -- Dave
-	carol := net.NewNode(t, "carol", []string{onionMsgProtocolOverride})
-	dave := net.NewNode(t, "dave", []string{onionMsgProtocolOverride})
+	carol := ht.NewNode("carol", []string{onionMsgProtocolOverride})
+	dave := ht.NewNode("dave", []string{onionMsgProtocolOverride})
 
 	// We'll also need a bolt 12 client for dave, because he's going to be
 	// receiving our onion messages.
@@ -30,19 +30,19 @@ func ReplyMessageTestCase(t *testing.T, net *lntest.NetworkHarness) {
 	// First we make p2p connections so that all the nodes can gossip
 	// channel information with each other, then we setup the channels
 	// themselves.
-	net.ConnectNodesPerm(t, net.Alice, net.Bob)
-	net.ConnectNodesPerm(t, net.Bob, carol)
-	net.ConnectNodesPerm(t, carol, dave)
+	ht.ConnectNodesPerm(ht.Alice, ht.Bob)
+	ht.ConnectNodesPerm(ht.Bob, carol)
+	ht.ConnectNodesPerm(carol, dave)
 
 	// Alice -> Bob
-	openChannelAndAnnounce(t, net, net.Alice, net.Bob, carol, dave)
+	openChannelAndAnnounce(t, ht, ht.Alice, ht.Bob, carol, dave)
 
 	// Bob -> Carol
-	openChannelAndAnnounce(t, net, net.Bob, carol, net.Alice, dave)
+	openChannelAndAnnounce(t, ht, ht.Bob, carol, ht.Alice, dave)
 
 	// Carol -> Dave
-	fundNode(ctxb, t, net, carol)
-	openChannelAndAnnounce(t, net, carol, dave, net.Alice, net.Bob)
+	fundNode(ctxb, t, ht, carol)
+	openChannelAndAnnounce(t, ht, carol, dave, ht.Alice, ht.Bob)
 
 	// Create a reply path to Dave's node.
 	ctxt, cancel := context.WithTimeout(ctxb, defaultTimeout)

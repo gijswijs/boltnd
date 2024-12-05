@@ -5,8 +5,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/carlakc/boltnd/offersrpc"
-	"github.com/carlakc/boltnd/testutils"
+	"github.com/gijswijs/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/testutils"
 	"github.com/lightningnetwork/lnd/lntest"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -15,8 +15,8 @@ import (
 
 // SubscribeOnionPayload tests subscriptions to specific tlv fields in our
 // onion payload.
-func SubscribeOnionPayload(t *testing.T, net *lntest.NetworkHarness) {
-	offersTest := setupForBolt12(t, net)
+func SubscribeOnionPayload(t *testing.T, ht *lntest.HarnessTest) {
+	offersTest := setupForBolt12(t, ht)
 	defer offersTest.cleanup()
 
 	var (
@@ -25,7 +25,7 @@ func SubscribeOnionPayload(t *testing.T, net *lntest.NetworkHarness) {
 	)
 
 	// Connect Alice and Bob so that they can exchange onion messages.
-	net.ConnectNodes(t, net.Alice, net.Bob)
+	ht.ConnectNodes(ht.Alice, ht.Bob)
 
 	// Create ctx with cancelation (but no timeout) to use for
 	// subscriptions.
@@ -90,7 +90,7 @@ func SubscribeOnionPayload(t *testing.T, net *lntest.NetworkHarness) {
 	ctxt, cancel := context.WithTimeout(ctxb, defaultTimeout)
 	defer cancel()
 	req := &offersrpc.SendOnionMessageRequest{
-		Pubkey: net.Bob.PubKey[:],
+		Pubkey: ht.Bob.PubKey[:],
 		FinalPayloads: map[uint64][]byte{
 			103: []byte{1, 2, 3},
 		},

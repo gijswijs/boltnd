@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/carlakc/boltnd/testutils"
+	"github.com/gijswijs/boltnd/testutils"
 	"github.com/stretchr/testify/require"
 )
 

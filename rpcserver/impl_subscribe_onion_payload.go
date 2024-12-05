@@ -3,9 +3,9 @@ package rpcserver
 import (
 	"context"
 
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/offersrpc"
-	"github.com/carlakc/boltnd/onionmsg"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/onionmsg"
 	"github.com/lightningnetwork/lnd/tlv"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

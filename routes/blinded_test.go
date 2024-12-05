@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/testutils"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/testutils"
 	"github.com/lightninglabs/lndclient"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	lndwire "github.com/lightningnetwork/lnd/lnwire"
@@ -299,7 +299,7 @@ func TestBuildBlindedRoute(t *testing.T) {
 	tests := []struct {
 		name          string
 		relayingPeers []*lndclient.NodeInfo
-		route         []*sphinx.BlindedPathHop
+		path          []*sphinx.HopInfo
 		err           error
 	}{
 		{
@@ -330,14 +330,14 @@ func TestBuildBlindedRoute(t *testing.T) {
 					},
 				},
 			},
-			route: []*sphinx.BlindedPathHop{
+			path: []*sphinx.HopInfo{
 				{
-					NodePub: pubkeys[2],
-					Payload: introData,
+					NodePub:   pubkeys[2],
+					PlainText: introData,
 				},
 				{
-					NodePub: pubkeys[0],
-					Payload: nil,
+					NodePub:   pubkeys[0],
+					PlainText: nil,
 				},
 			},
 		},
@@ -352,7 +352,7 @@ func TestBuildBlindedRoute(t *testing.T) {
 			)
 
 			require.True(t, errors.Is(err, testCase.err))
-			require.Equal(t, route, testCase.route)
+			require.Equal(t, route, testCase.path)
 		})
 	}
 }
@@ -380,7 +380,7 @@ func TestCreatePathToBlind(t *testing.T) {
 		name         string
 		route        []*btcec.PublicKey
 		blindedStart *blindedStart
-		expectedPath []*sphinx.BlindedPathHop
+		expectedPath []*sphinx.HopInfo
 	}{
 		{
 			// A single hop blinded path will just have the first
@@ -390,7 +390,7 @@ func TestCreatePathToBlind(t *testing.T) {
 			route: []*btcec.PublicKey{
 				pubkeys[0],
 			},
-			expectedPath: []*sphinx.BlindedPathHop{
+			expectedPath: []*sphinx.HopInfo{
 				{
 					NodePub: pubkeys[0],
 				},
@@ -403,14 +403,14 @@ func TestCreatePathToBlind(t *testing.T) {
 				pubkeys[1],
 				pubkeys[2],
 			},
-			expectedPath: []*sphinx.BlindedPathHop{
+			expectedPath: []*sphinx.HopInfo{
 				{
-					NodePub: pubkeys[0],
-					Payload: pubkeys[1].SerializeCompressed(),
+					NodePub:   pubkeys[0],
+					PlainText: pubkeys[1].SerializeCompressed(),
 				},
 				{
-					NodePub: pubkeys[1],
-					Payload: pubkeys[2].SerializeCompressed(),
+					NodePub:   pubkeys[1],
+					PlainText: pubkeys[2].SerializeCompressed(),
 				},
 				{
 					NodePub: pubkeys[2],
@@ -427,16 +427,16 @@ func TestCreatePathToBlind(t *testing.T) {
 				unblindedID:   pubkeys[2],
 				blindingPoint: pubkeys[3],
 			},
-			expectedPath: []*sphinx.BlindedPathHop{
+			expectedPath: []*sphinx.HopInfo{
 				{
-					NodePub: pubkeys[0],
-					Payload: pubkeys[1].SerializeCompressed(),
+					NodePub:   pubkeys[0],
+					PlainText: pubkeys[1].SerializeCompressed(),
 				},
 				{
 					NodePub: pubkeys[1],
 					// Expect the unblinded node's ID and
 					// blinding point to be included.
-					Payload: append(
+					PlainText: append(
 						pubkeys[2].SerializeCompressed(),
 						pubkeys[3].SerializeCompressed()...,
 					),
@@ -558,11 +558,11 @@ func TestBlindedToSphinx(t *testing.T) {
 			name: "only introduction point",
 			blindedPath: &sphinx.BlindedPath{
 				IntroductionPoint: pubkeys[0],
-				EncryptedData: [][]byte{
-					encryptedData0,
-				},
-				BlindedHops: []*btcec.PublicKey{
-					pubkeys[1],
+				BlindedHops: []*sphinx.BlindedHopInfo{
+					{
+						BlindedNodePub: pubkeys[1],
+						CipherText:     encryptedData0,
+					},
 				},
 			},
 			expectedPath: &sphinx.PaymentPath{
@@ -579,11 +579,11 @@ func TestBlindedToSphinx(t *testing.T) {
 			name: "single hop with final payload",
 			blindedPath: &sphinx.BlindedPath{
 				IntroductionPoint: pubkeys[0],
-				EncryptedData: [][]byte{
-					encryptedData0,
-				},
-				BlindedHops: []*btcec.PublicKey{
-					pubkeys[1],
+				BlindedHops: []*sphinx.BlindedHopInfo{
+					{
+						BlindedNodePub: pubkeys[1],
+						CipherText:     encryptedData0,
+					},
 				},
 			},
 			finalPayload: finalPayload,
@@ -601,12 +601,15 @@ func TestBlindedToSphinx(t *testing.T) {
 			name: "two hops with final payload",
 			blindedPath: &sphinx.BlindedPath{
 				IntroductionPoint: pubkeys[0],
-				EncryptedData: [][]byte{
-					encryptedData0, encryptedData1,
-				},
-				BlindedHops: []*btcec.PublicKey{
-					pubkeys[1],
-					pubkeys[2],
+				BlindedHops: []*sphinx.BlindedHopInfo{
+					{
+						BlindedNodePub: pubkeys[1],
+						CipherText:     encryptedData0,
+					},
+					{
+						BlindedNodePub: pubkeys[2],
+						CipherText:     encryptedData1,
+					},
 				},
 			},
 			finalPayload: finalPayload,
@@ -631,14 +634,19 @@ func TestBlindedToSphinx(t *testing.T) {
 			name: "three hops",
 			blindedPath: &sphinx.BlindedPath{
 				IntroductionPoint: pubkeys[0],
-				EncryptedData: [][]byte{
-					encryptedData0, encryptedData1,
-					encryptedData2,
-				},
-				BlindedHops: []*btcec.PublicKey{
-					pubkeys[1],
-					pubkeys[2],
-					pubkeys[3],
+				BlindedHops: []*sphinx.BlindedHopInfo{
+					{
+						BlindedNodePub: pubkeys[1],
+						CipherText:     encryptedData0,
+					},
+					{
+						BlindedNodePub: pubkeys[2],
+						CipherText:     encryptedData1,
+					},
+					{
+						BlindedNodePub: pubkeys[3],
+						CipherText:     encryptedData2,
+					},
 				},
 			},
 			expectedPath: &sphinx.PaymentPath{
@@ -669,11 +677,15 @@ func TestBlindedToSphinx(t *testing.T) {
 			name: "reply path",
 			blindedPath: &sphinx.BlindedPath{
 				IntroductionPoint: pubkeys[0],
-				EncryptedData: [][]byte{
-					encryptedData0, encryptedData1,
-				},
-				BlindedHops: []*btcec.PublicKey{
-					pubkeys[1], pubkeys[2],
+				BlindedHops: []*sphinx.BlindedHopInfo{
+					{
+						BlindedNodePub: pubkeys[1],
+						CipherText:     encryptedData0,
+					},
+					{
+						BlindedNodePub: pubkeys[2],
+						CipherText:     encryptedData1,
+					},
 				},
 			},
 			replyPath: replyPath,
@@ -698,11 +710,11 @@ func TestBlindedToSphinx(t *testing.T) {
 			name: "blinded hops included",
 			blindedPath: &sphinx.BlindedPath{
 				IntroductionPoint: pubkeys[0],
-				EncryptedData: [][]byte{
-					encryptedData0,
-				},
-				BlindedHops: []*btcec.PublicKey{
-					pubkeys[1],
+				BlindedHops: []*sphinx.BlindedHopInfo{
+					{
+						BlindedNodePub: pubkeys[1],
+						CipherText:     encryptedData0,
+					},
 				},
 			},
 			extraHops: []*lnwire.BlindedHop{

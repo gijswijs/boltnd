@@ -162,7 +162,7 @@ func OptionLNDClient(lndClientCfg *lndclient.LndServicesConfig) ConfigOption {
 }
 
 // OptionLNDLogger uses lnd's root logger and interceptor to register our logs.
-func OptionLNDLogger(root *build.RotatingLogWriter,
+func OptionLNDLogger(root *build.SubLoggerManager,
 	interceptor signal.Interceptor) ConfigOption {
 
 	return func(c *Config) error {

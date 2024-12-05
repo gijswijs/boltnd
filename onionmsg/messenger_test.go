@@ -7,9 +7,8 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/testutils"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/testutils"
 	"github.com/lightninglabs/lndclient"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	"github.com/lightningnetwork/lnd/routing/route"
@@ -308,7 +307,7 @@ func testSendMessage(t *testing.T, testCase sendMessageTest) {
 	// We don't expect the messenger's shutdown function to be used, so
 	// we can provide nil (knowing that our tests will panic if it's used).
 	messenger := NewOnionMessenger(
-		&chaincfg.RegressionNetParams, lnd, nodeKeyECDH, nil,
+		lnd, nodeKeyECDH, nil,
 	)
 
 	// Overwrite our peer lookup defaults so that we don't have sleeps in
@@ -856,7 +855,7 @@ func testReceiveOnionMessages(t *testing.T, privkey *btcec.PrivateKey,
 	)
 
 	messenger := NewOnionMessenger(
-		&chaincfg.RegressionNetParams, lnd, nodeKeyECDH,
+		lnd, nodeKeyECDH,
 		requestShutdown,
 	)
 	err := messenger.Start()
@@ -918,7 +917,7 @@ func TestHandleRegistration(t *testing.T) {
 
 	// Create a messenger, but don't start it yet.
 	messenger := NewOnionMessenger(
-		&chaincfg.RegressionNetParams, lnd, nodeKeyECDH, nil,
+		lnd, nodeKeyECDH, nil,
 	)
 
 	// Assert the registration fails if we're not started.

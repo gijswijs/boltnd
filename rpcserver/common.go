@@ -2,8 +2,8 @@ package rpcserver
 
 import (
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/offersrpc"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -90,8 +90,8 @@ func composeBlindedRoute(route *sphinx.BlindedPath) *offersrpc.BlindedPath {
 
 	for i := 0; i < len(route.BlindedHops); i++ {
 		rpcRoute.Hops = append(rpcRoute.Hops, &offersrpc.BlindedHop{
-			BlindedNodeId: route.BlindedHops[i].SerializeCompressed(),
-			EncryptedData: route.EncryptedData[i],
+			BlindedNodeId: route.BlindedHops[i].BlindedNodePub.SerializeCompressed(),
+			EncryptedData: route.BlindedHops[i].CipherText,
 		})
 	}
 

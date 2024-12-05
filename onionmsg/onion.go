@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/carlakc/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/lnwire"
 	"github.com/lightninglabs/lndclient"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	"github.com/lightningnetwork/lnd/routing/route"
@@ -45,6 +45,10 @@ func customOnionMessage(peer *btcec.PublicKey,
 func decryptBlobFunc(nodeKey sphinx.SingleKeyECDH) func(*btcec.PublicKey,
 	*lnwire.OnionMessagePayload) (*lnwire.BlindedRouteData, error) {
 
+	router := sphinx.NewRouter(
+		nodeKey, sphinx.NewMemoryReplayLog(),
+	)
+
 	return func(blindingPoint *btcec.PublicKey,
 		payload *lnwire.OnionMessagePayload) (*lnwire.BlindedRouteData,
 		error) {
@@ -57,8 +61,8 @@ func decryptBlobFunc(nodeKey sphinx.SingleKeyECDH) func(*btcec.PublicKey,
 			return nil, ErrNoEncryptedData
 		}
 
-		decrypted, err := sphinx.DecryptBlindedData(
-			nodeKey, blindingPoint, payload.EncryptedData,
+		decrypted, err := router.DecryptBlindedHopData(
+			blindingPoint, payload.EncryptedData,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("could not decrypt data "+

@@ -10,9 +10,10 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lntest"
+	"github.com/lightningnetwork/lnd/lntest/node"
 	"github.com/stretchr/testify/require"
 )
 
@@ -99,51 +100,23 @@ func readOnionMessage(msgChan chan *offersrpc.SubscribeOnionPayloadResponse,
 // openChannelAndAnnounce opens a channel from initiator -> receiver, fully
 // confirming it and waiting until the initiator, recipient and optional set of
 // nodes in the network slice have seen the channel announcement.
-func openChannelAndAnnounce(t *testing.T, net *lntest.NetworkHarness,
-	initiator, receiver *lntest.HarnessNode,
-	network ...*lntest.HarnessNode) {
+func openChannelAndAnnounce(t *testing.T, ht *lntest.HarnessTest,
+	initiator, receiver *node.HarnessNode,
+	network ...*node.HarnessNode) {
 
 	chanReq := lntest.OpenChannelParams{
 		Amt: 500_0000,
 	}
 
-	chanUpdates, err := net.OpenChannel(initiator, receiver, chanReq)
-	require.NoError(t, err, "open channel")
-
-	// Mine 6 blocks so that our channel will confirm.
-	_, err = net.Miner.Client.Generate(6)
-	require.NoError(t, err, "mine blocks")
-
-	channelID, err := net.WaitForChannelOpen(chanUpdates)
-	require.NoError(t, err, "chan open")
-
-	// Wait for all nodes to see the channel between Alice and Bob.
-	require.NoError(
-		t, initiator.WaitForNetworkChannelOpen(channelID), "initiator",
-	)
-	require.NoError(
-		t, receiver.WaitForNetworkChannelOpen(channelID), "receiver",
-	)
-
-	for _, node := range network {
-		require.NoError(
-			t, node.WaitForNetworkChannelOpen(channelID),
-			"listener: %v", node.Name(),
-		)
-	}
+	ht.OpenChannel(initiator, receiver, chanReq)
 }
 
 // fundNode funds a node with 1BTC and waits for the balance to reflect in
 // its confirmed wallet balance.
-func fundNode(ctx context.Context, t *testing.T, net *lntest.NetworkHarness,
-	node *lntest.HarnessNode) {
+func fundNode(ctx context.Context, t *testing.T, ht *lntest.HarnessTest,
+	node *node.HarnessNode) {
 
-	ctxt, cancel := context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-	walletResp, err := node.WalletBalance(
-		ctxt, &lnrpc.WalletBalanceRequest{},
-	)
-	require.NoError(t, err, "wallet balance")
+	walletResp := node.RPC.WalletBalance()
 
 	startBalance := walletResp.ConfirmedBalance
 
@@ -151,10 +124,7 @@ func fundNode(ctx context.Context, t *testing.T, net *lntest.NetworkHarness,
 		Type: lnrpc.AddressType_TAPROOT_PUBKEY,
 	}
 
-	ctxt, cancel = context.WithTimeout(ctx, defaultTimeout)
-	defer cancel()
-	resp, err := node.NewAddress(ctx, addrReq)
-	require.NoError(t, err, "new address")
+	resp := node.RPC.NewAddress(addrReq)
 
 	addr, err := btcutil.DecodeAddress(resp.Address, node.Cfg.NetParams)
 	require.NoError(t, err, "decode addr")
@@ -167,20 +137,15 @@ func fundNode(ctx context.Context, t *testing.T, net *lntest.NetworkHarness,
 		Value:    btcutil.SatoshiPerBitcoin,
 	}
 
-	_, err = net.Miner.SendOutputs([]*wire.TxOut{output}, 7500)
+	_, err = ht.Miner().SendOutputs([]*wire.TxOut{output}, 7500)
 	require.NoError(t, err, "send outputs")
 
-	_, err = net.Miner.Client.Generate(6)
+	_, err = ht.Miner().Client.Generate(6)
 	require.NoError(t, err, "generate")
 
 	require.Eventually(t, func() bool {
-		ctxt, cancel = context.WithTimeout(ctx, defaultTimeout)
-		defer cancel()
 
-		walletResp, err = node.WalletBalance(
-			ctx, &lnrpc.WalletBalanceRequest{},
-		)
-		require.NoError(t, err, "wallet balance")
+		walletResp = node.RPC.WalletBalance()
 
 		// We do a loose check so that we don't have to worry about
 		// fees etc.

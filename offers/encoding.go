@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcutil/bech32"
-	"github.com/carlakc/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/lnwire"
 )
 
 var (

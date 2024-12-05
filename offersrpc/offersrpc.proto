@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package offersrpc;
 
-option go_package = "github.com/carlakc/boltnd/offersrpc";
+option go_package = "github.com/gijswijs/boltnd/offersrpc";
 
 service Offers {
     rpc SendOnionMessage (SendOnionMessageRequest)

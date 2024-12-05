@@ -6,16 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/carlakc/boltnd/lnwire"
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lntest"
 	"github.com/stretchr/testify/require"
 )
 
 // OnionMessageTestCase tests the exchange of onion messages.
-func OnionMessageTestCase(t *testing.T, net *lntest.NetworkHarness) {
-	offersTest := setupForBolt12(t, net)
+func OnionMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
+	offersTest := setupForBolt12(t, ht)
 	defer offersTest.cleanup()
 
 	var (
@@ -27,30 +27,23 @@ func OnionMessageTestCase(t *testing.T, net *lntest.NetworkHarness) {
 	// Bob in the graph because he doesn't have any channels (and she has
 	// no peers for gossip), so we first test the easy case where they're
 	// already connected.
-	net.ConnectNodes(t, net.Alice, net.Bob)
+	ht.ConnectNodes(ht.Alice, ht.Bob)
 
-	// Create a context with no timeout that will cancel at the end of our
-	// test and wait for any goroutines that have been spun up.
-	ctxc, cancel := context.WithCancel(ctxb)
+	// Subscribe to custom messages that bob receives.
+	bobMsg, cancel := ht.Bob.RPC.SubscribeCustomMessages()
 	defer func() {
 		cancel()
 		wg.Wait()
 	}()
 
-	// Subscribe to custom messages that bob receives.
-	bobMsg, err := net.Bob.LightningClient.SubscribeCustomMessages(
-		ctxc, &lnrpc.SubscribeCustomMessagesRequest{},
-	)
-	require.NoError(t, err, "bob subscribe")
-
 	// Send an onion message from alice to bob, using our default timeout
 	// to ensure that sending does not hang.
 	ctxt, cancel := context.WithTimeout(ctxb, defaultTimeout)
 	req := &offersrpc.SendOnionMessageRequest{
-		Pubkey:        net.Bob.PubKey[:],
+		Pubkey:        ht.Bob.PubKey[:],
 		DirectConnect: true,
 	}
-	_, err = offersTest.aliceOffers.SendOnionMessage(ctxt, req)
+	_, err := offersTest.aliceOffers.SendOnionMessage(ctxt, req)
 	require.NoError(t, err, "send onion message")
 	cancel()
 
@@ -106,14 +99,14 @@ func OnionMessageTestCase(t *testing.T, net *lntest.NetworkHarness) {
 
 	// Now, we will spin up a new node, carol to test sending messages to
 	// peers that we are not currently connected to.
-	carol := net.NewNode(t, "carol", []string{onionMsgProtocolOverride})
+	carol := ht.NewNode("carol", []string{onionMsgProtocolOverride})
 
 	// Connect Alice and Carol so that Carol can sync the graph from Alice.
-	net.ConnectNodesPerm(t, net.Alice, carol)
+	ht.ConnectNodesPerm(ht.Alice, carol)
 
 	// We're going to open a channel between Alice and Bob, so that they
 	// become part of the public graph.
-	openChannelAndAnnounce(t, net, net.Alice, net.Bob, carol)
+	openChannelAndAnnounce(t, ht, ht.Alice, ht.Bob, carol)
 
 	// We now have the following setup:
 	//  Alice --- (channel) ---- Bob
@@ -129,7 +122,7 @@ func OnionMessageTestCase(t *testing.T, net *lntest.NetworkHarness) {
 
 	ctxt, cancel = context.WithTimeout(ctxb, defaultTimeout)
 	req = &offersrpc.SendOnionMessageRequest{
-		Pubkey:        net.Bob.PubKey[:],
+		Pubkey:        ht.Bob.PubKey[:],
 		DirectConnect: true,
 	}
 	_, err = carolB12.SendOnionMessage(ctxt, req)
@@ -155,7 +148,7 @@ func OnionMessageTestCase(t *testing.T, net *lntest.NetworkHarness) {
 	// Now open a channel from Carol -> Alice so that we have the following
 	// network structure:
 	// Carol --- Alice ---- Bob
-	openChannelAndAnnounce(t, net, net.Alice, carol, net.Bob)
+	openChannelAndAnnounce(t, ht, ht.Alice, carol, ht.Bob)
 
 	// Generate a blinded path to Carol.
 	ctxt, cancel = context.WithTimeout(ctxb, defaultTimeout)
@@ -168,7 +161,7 @@ func OnionMessageTestCase(t *testing.T, net *lntest.NetworkHarness) {
 	// back to Carol.
 	ctxt, cancel = context.WithTimeout(ctxb, defaultTimeout)
 	req = &offersrpc.SendOnionMessageRequest{
-		Pubkey:        net.Bob.PubKey[:],
+		Pubkey:        ht.Bob.PubKey[:],
 		ReplyPath:     routeResp.Route,
 		DirectConnect: true,
 	}

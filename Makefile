@@ -1,7 +1,7 @@
 # The functionality in this makefile is largely copied from lnd/Makefile, 
 # credit to LL devs.
 
-PKG := github.com/carlakc/boltnd
+PKG := github.com/gijswijs/boltnd
 ESCPKG := github.com\/carlakc\/boltnd
 
 XARGS := xargs -L 1

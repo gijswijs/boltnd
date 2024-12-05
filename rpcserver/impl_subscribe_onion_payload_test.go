@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/tlv"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

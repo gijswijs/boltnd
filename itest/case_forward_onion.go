@@ -5,30 +5,30 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/lntest"
 	"github.com/stretchr/testify/require"
 )
 
 // OnionMsgForwardTestCase tests forwarding of onion messages.
-func OnionMsgForwardTestCase(t *testing.T, net *lntest.NetworkHarness) {
-	offersTest := setupForBolt12(t, net)
+func OnionMsgForwardTestCase(t *testing.T, ht *lntest.HarnessTest) {
+	offersTest := setupForBolt12(t, ht)
 	defer offersTest.cleanup()
 
 	// Spin up a third node immediately because we will need a three-hop
 	// network for this test.
-	carol := net.NewNode(t, "carol", []string{onionMsgProtocolOverride})
+	carol := ht.NewNode("carol", []string{onionMsgProtocolOverride})
 	carolB12, cleanup := bolt12Client(t, carol)
 	defer cleanup()
 
 	// Connect nodes before channel opening so that they can share gossip.
-	net.ConnectNodesPerm(t, net.Alice, net.Bob)
-	net.ConnectNodesPerm(t, net.Bob, carol)
+	ht.ConnectNodesPerm(ht.Alice, ht.Bob)
+	ht.ConnectNodesPerm(ht.Bob, carol)
 
 	// Open channels: Alice --- Bob --- Carol and wait for each node to
 	// sync the network graph.
-	openChannelAndAnnounce(t, net, net.Alice, net.Bob, carol)
-	openChannelAndAnnounce(t, net, net.Bob, carol, net.Alice)
+	openChannelAndAnnounce(t, ht, ht.Alice, ht.Bob, carol)
+	openChannelAndAnnounce(t, ht, ht.Bob, carol, ht.Alice)
 
 	var (
 		ctxb = context.Background()

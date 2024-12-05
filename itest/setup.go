@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/carlakc/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/lntest"
+	"github.com/lightningnetwork/lnd/lntest/node"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,26 +24,24 @@ type bolt12TestSetup struct {
 // setupForBolt12 restarts our nodes with the appropriate overrides required to
 // use bolt 12 functionality and returns connections to each node's offers
 // subserver.
-func setupForBolt12(t *testing.T, net *lntest.NetworkHarness) *bolt12TestSetup {
+func setupForBolt12(t *testing.T, ht *lntest.HarnessTest) *bolt12TestSetup {
 	// Update both nodes extra args to allow external handling of onion
 	// messages and restart them so that the args some into effect.
-	net.Alice.Cfg.ExtraArgs = []string{
+	ht.Alice.Cfg.ExtraArgs = []string{
 		onionMsgProtocolOverride,
 	}
 
-	net.Bob.Cfg.ExtraArgs = []string{
+	ht.Bob.Cfg.ExtraArgs = []string{
 		onionMsgProtocolOverride,
 	}
 
-	err := net.RestartNode(net.Alice, nil, nil)
-	require.NoError(t, err, "alice restart")
+	ht.RestartNode(ht.Alice)
 
-	err = net.RestartNode(net.Bob, nil, nil)
-	require.NoError(t, err, "bob restart")
+	ht.RestartNode(ht.Bob)
 
 	// Next, connect to each node's offers subserver.
-	aliceClient, aliceClean := bolt12Client(t, net.Alice)
-	bobClient, bobClean := bolt12Client(t, net.Bob)
+	aliceClient, aliceClean := bolt12Client(t, ht.Alice)
+	bobClient, bobClean := bolt12Client(t, ht.Bob)
 
 	return &bolt12TestSetup{
 		aliceOffers: aliceClient,
@@ -55,10 +54,10 @@ func setupForBolt12(t *testing.T, net *lntest.NetworkHarness) *bolt12TestSetup {
 }
 
 // bolt12Client returns an offersrpc client and cleanup for a node.
-func bolt12Client(t *testing.T, node *lntest.HarnessNode) (
+func bolt12Client(t *testing.T, node *node.HarnessNode) (
 	offersrpc.OffersClient, func()) {
 
-	conn, err := node.ConnectRPC(true)
+	conn, err := node.ConnectRPC()
 	require.NoError(t, err, "%v grpc conn", node.Name())
 
 	return offersrpc.NewOffersClient(conn), func() {

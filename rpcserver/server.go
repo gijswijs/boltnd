@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/carlakc/boltnd/offersrpc"
-	"github.com/carlakc/boltnd/onionmsg"
-	"github.com/carlakc/boltnd/routes"
+	"github.com/gijswijs/boltnd/offersrpc"
+	"github.com/gijswijs/boltnd/onionmsg"
+	"github.com/gijswijs/boltnd/routes"
 	"github.com/lightninglabs/lndclient"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -89,7 +89,7 @@ func (s *Server) Start(lnd *lndclient.LndServices) error {
 
 	// Finally setup an onion messenger using the onion router.
 	s.onionMsgr = onionmsg.NewOnionMessenger(
-		lnd.ChainParams, lnd.Client, nodeKeyECDH, s.requestShutdown,
+		lnd.Client, nodeKeyECDH, s.requestShutdown,
 	)
 
 	if err := s.onionMsgr.Start(); err != nil {

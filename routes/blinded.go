@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/carlakc/boltnd/lnwire"
+	"github.com/gijswijs/boltnd/lnwire"
 	"github.com/lightninglabs/lndclient"
 	sphinx "github.com/lightningnetwork/lightning-onion"
 	lndwire "github.com/lightningnetwork/lnd/lnwire"
@@ -113,7 +113,7 @@ func (b *BlindedRouteGenerator) ReplyPath(ctx context.Context,
 // TODO - this has terrible privacy, fill in more nodes (or dummies) between
 // us and the intro node.
 func buildBlindedRoute(relayingPeers []*lndclient.NodeInfo,
-	ourPubkey *btcec.PublicKey) ([]*sphinx.BlindedPathHop, error) {
+	ourPubkey *btcec.PublicKey) ([]*sphinx.HopInfo, error) {
 
 	if len(relayingPeers) == 0 {
 		return nil, ErrNoRelayingPeers
@@ -144,14 +144,14 @@ func buildBlindedRoute(relayingPeers []*lndclient.NodeInfo,
 		return nil, fmt.Errorf("intro payload: %w", err)
 	}
 
-	return []*sphinx.BlindedPathHop{
+	return []*sphinx.HopInfo{
 		{
-			NodePub: introNode,
-			Payload: introPayloadBytes,
+			NodePub:   introNode,
+			PlainText: introPayloadBytes,
 		},
 		{
-			NodePub: ourPubkey,
-			Payload: nil,
+			NodePub:   ourPubkey,
+			PlainText: nil,
 		},
 	}, nil
 }
@@ -162,12 +162,12 @@ type canRelayFunc func(*lndclient.NodeInfo) error
 
 // getRelayingPeers returns a list of peers that would be suitable for relaying
 // onion messages:
-// 1. We have a channel with the peer: assuming that onion messages will be
-//    predominantly relayed on channel-lines.
-// 2. The channel is active: an active channel indicates that the peer is
-//    online and will likely be able to relay messages.
-// 3. The node satisfies the canRelay closure passed in (provided as a param
-//    for easy testing).
+//  1. We have a channel with the peer: assuming that onion messages will be
+//     predominantly relayed on channel-lines.
+//  2. The channel is active: an active channel indicates that the peer is
+//     online and will likely be able to relay messages.
+//  3. The node satisfies the canRelay closure passed in (provided as a param
+//     for easy testing).
 func getRelayingPeers(ctx context.Context, lnd Lnd,
 	canRelay canRelayFunc) ([]*lndclient.NodeInfo, error) {
 
@@ -278,7 +278,7 @@ type BlindedRouteRequest struct {
 	finalPayloads []*lnwire.FinalHopPayload
 
 	// blindPath blinds the set of hops provided.
-	blindPath func(*btcec.PrivateKey, []*sphinx.BlindedPathHop) (
+	blindPath func(*btcec.PrivateKey, []*sphinx.HopInfo) (
 		*sphinx.BlindedPath, error)
 
 	// encodeBlindedData encodes data for blinded route blobs.
@@ -474,9 +474,13 @@ type blindedStart struct {
 // Given a path N(0), N(1), N(2), ... , N(k), the blinded route will have
 // the following entries.
 // [0] NodePub: N(0)
-//     Payload: TLV( next_node_id : N(1) )
+//
+//	Payload: TLV( next_node_id : N(1) )
+//
 // [1] NodePub: N(1)
-//     Payload: TLV( next_node_id: N(2) )
+//
+//	Payload: TLV( next_node_id: N(2) )
+//
 // ...
 // [k] NodePub: N(k)
 //
@@ -485,7 +489,8 @@ type blindedStart struct {
 // in the final payload of the path:
 // ...
 // [k] NodePub: N(K)
-//     Payload: TLV( next_node_id: intro , override: blinding_point )
+//
+//	Payload: TLV( next_node_id: intro , override: blinding_point )
 //
 // An encodePayload function is passed in as a parameter for easy mocking in
 // tests.
@@ -493,15 +498,15 @@ type blindedStart struct {
 // Note that this function currently sends empty onion messages to peers (no
 // TLVs in the final hop).
 func createPathToBlind(path []*btcec.PublicKey, blindedStart *blindedStart,
-	encodePayload encodeBlindedPayload) ([]*sphinx.BlindedPathHop, error) {
+	encodePayload encodeBlindedPayload) ([]*sphinx.HopInfo, error) {
 
 	hopCount := len(path)
 
 	// Create a set of blinded hops for our path.
-	hopsToBlind := make([]*sphinx.BlindedPathHop, len(path))
+	hopsToBlind := make([]*sphinx.HopInfo, len(path))
 
 	// Create our first hop, which it the introduction node.
-	hopsToBlind[0] = &sphinx.BlindedPathHop{
+	hopsToBlind[0] = &sphinx.HopInfo{
 		NodePub: path[0],
 	}
 
@@ -516,14 +521,14 @@ func createPathToBlind(path []*btcec.PublicKey, blindedStart *blindedStart,
 		}
 
 		var err error
-		hopsToBlind[i-1].Payload, err = encodePayload(data)
+		hopsToBlind[i-1].PlainText, err = encodePayload(data)
 		if err != nil {
 			return nil, fmt.Errorf("intermediate node: %v "+
 				"encoding failed: %w", i, err)
 		}
 
 		// Add our hop to the set of blinded hops.
-		hopsToBlind[i] = &sphinx.BlindedPathHop{
+		hopsToBlind[i] = &sphinx.HopInfo{
 			NodePub: path[i],
 		}
 	}
@@ -538,7 +543,7 @@ func createPathToBlind(path []*btcec.PublicKey, blindedStart *blindedStart,
 		}
 
 		var err error
-		hopsToBlind[hopCount-1].Payload, err = encodePayload(data)
+		hopsToBlind[hopCount-1].PlainText, err = encodePayload(data)
 		if err != nil {
 			return nil, fmt.Errorf("ephemeral switch out node: %v",
 				err)
@@ -559,7 +564,7 @@ func blindedToSphinx(blindedRoute *sphinx.BlindedPath,
 	var (
 		sphinxPath sphinx.PaymentPath
 
-		ourHopCount   = len(blindedRoute.EncryptedData)
+		ourHopCount   = len(blindedRoute.BlindedHops)
 		extraHopCount = len(extraHops)
 	)
 
@@ -572,7 +577,7 @@ func blindedToSphinx(blindedRoute *sphinx.BlindedPath,
 		// Create an onion message payload with the encrypted data for
 		// this hop.
 		payload := &lnwire.OnionMessagePayload{
-			EncryptedData: blindedRoute.EncryptedData[i],
+			EncryptedData: blindedRoute.BlindedHops[i].CipherText,
 		}
 
 		// If we're on the final hop and there are no extra hops to add
@@ -585,7 +590,7 @@ func blindedToSphinx(blindedRoute *sphinx.BlindedPath,
 
 		// Encode the tlv stream for inclusion in our message.
 		hop, err := createSphinxHop(
-			*blindedRoute.BlindedHops[i], payload,
+			*blindedRoute.BlindedHops[i].BlindedNodePub, payload,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("sphinx hop %v: %w", i, err)
