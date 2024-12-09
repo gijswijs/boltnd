@@ -24,7 +24,7 @@ type bolt12TestSetup struct {
 // setupForBolt12 restarts our nodes with the appropriate overrides required to
 // use bolt 12 functionality and returns connections to each node's offers
 // subserver.
-func setupForBolt12(t *testing.T, ht *lntest.HarnessTest) *bolt12TestSetup {
+func setupForBolt12(ht *lntest.HarnessTest) *bolt12TestSetup {
 	// Update both nodes extra args to allow external handling of onion
 	// messages and restart them so that the args some into effect.
 	ht.Alice.Cfg.ExtraArgs = []string{
@@ -40,8 +40,8 @@ func setupForBolt12(t *testing.T, ht *lntest.HarnessTest) *bolt12TestSetup {
 	ht.RestartNode(ht.Bob)
 
 	// Next, connect to each node's offers subserver.
-	aliceClient, aliceClean := bolt12Client(t, ht.Alice)
-	bobClient, bobClean := bolt12Client(t, ht.Bob)
+	aliceClient, aliceClean := bolt12Client(ht.T, ht.Alice)
+	bobClient, bobClean := bolt12Client(ht.T, ht.Bob)
 
 	return &bolt12TestSetup{
 		aliceOffers: aliceClient,

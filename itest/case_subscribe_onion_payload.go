@@ -3,7 +3,6 @@ package itest
 import (
 	"context"
 	"sync"
-	"testing"
 
 	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/gijswijs/boltnd/testutils"
@@ -15,8 +14,8 @@ import (
 
 // SubscribeOnionPayload tests subscriptions to specific tlv fields in our
 // onion payload.
-func SubscribeOnionPayload(t *testing.T, ht *lntest.HarnessTest) {
-	offersTest := setupForBolt12(t, ht)
+func SubscribeOnionPayload(ht *lntest.HarnessTest) {
+	offersTest := setupForBolt12(ht)
 	defer offersTest.cleanup()
 
 	var (
@@ -62,7 +61,7 @@ func SubscribeOnionPayload(t *testing.T, ht *lntest.HarnessTest) {
 	failedClient, err := offersTest.bobOffers.SubscribeOnionPayload(
 		ctxc, sub1Req,
 	)
-	require.NoError(t, err, "bad tlv subscription")
+	require.NoError(ht.T, err, "bad tlv subscription")
 
 	// We expect to immediately receive an error from our subscription,
 	// because we've requested a bad tlv value.
@@ -71,10 +70,10 @@ func SubscribeOnionPayload(t *testing.T, ht *lntest.HarnessTest) {
 
 	// Assert that we get an invalid argument error when we try to register
 	// outside of the allowed range.
-	require.NotNil(t, err, "bad tlv error")
+	require.NotNil(ht.T, err, "bad tlv error")
 	errStat, ok := status.FromError(err)
-	require.True(t, ok, "expect coded error: %v", err)
-	require.Equal(t, codes.InvalidArgument, errStat.Code())
+	require.True(ht.T, ok, "expect coded error: %v", err)
+	require.Equal(ht.T, codes.InvalidArgument, errStat.Code())
 
 	// Update to a value inside of our range, and assert that we can
 	// subscribe.
@@ -83,7 +82,7 @@ func SubscribeOnionPayload(t *testing.T, ht *lntest.HarnessTest) {
 	client1, err := offersTest.bobOffers.SubscribeOnionPayload(
 		ctxc, sub1Req,
 	)
-	require.NoError(t, err, "subscribe type=101")
+	require.NoError(ht.T, err, "subscribe type=101")
 
 	// First, send an onion message from Alice to Bob that *does not*
 	// include the type that we're subscribed to.
@@ -98,7 +97,7 @@ func SubscribeOnionPayload(t *testing.T, ht *lntest.HarnessTest) {
 	}
 
 	_, err = offersTest.aliceOffers.SendOnionMessage(ctxt, req)
-	require.NoError(t, err, "payload 103")
+	require.NoError(ht.T, err, "payload 103")
 
 	// Next, we send a message that does use the type that we're subscribed
 	// to.
@@ -107,7 +106,7 @@ func SubscribeOnionPayload(t *testing.T, ht *lntest.HarnessTest) {
 
 	// We'll also include a reply path to test coverage of reply paths in
 	// subscriptions.
-	pubkeys := testutils.GetPubkeys(t, 3)
+	pubkeys := testutils.GetPubkeys(ht.T, 3)
 
 	req.ReplyPath = &offersrpc.BlindedPath{
 		IntroductionNode: pubkeys[0].SerializeCompressed(),
@@ -121,14 +120,14 @@ func SubscribeOnionPayload(t *testing.T, ht *lntest.HarnessTest) {
 	}
 
 	_, err = offersTest.aliceOffers.SendOnionMessage(ctxt, req)
-	require.NoError(t, err, "send payload")
+	require.NoError(ht.T, err, "send payload")
 
 	consumeMessage(client1)
 	payloadReceived, err := receiveMessage()
-	require.NoError(t, err)
+	require.NoError(ht.T, err)
 
-	require.Equal(t, payload1, payloadReceived.Value)
-	assertBlindedPathEqual(t, req.ReplyPath, payloadReceived.ReplyPath)
+	require.Equal(ht.T, payload1, payloadReceived.Value)
+	assertBlindedPathEqual(ht.T, req.ReplyPath, payloadReceived.ReplyPath)
 
 	// Finally, we test a case where a single onion message contains two
 	// payloads, both belonging to our subscriptions.
@@ -139,7 +138,7 @@ func SubscribeOnionPayload(t *testing.T, ht *lntest.HarnessTest) {
 	client2, err := offersTest.bobOffers.SubscribeOnionPayload(
 		ctxc, sub2Req,
 	)
-	require.NoError(t, err, "subscribe type=105")
+	require.NoError(ht.T, err, "subscribe type=105")
 
 	// Send a message from Alice to Bob that has both subscribed payloads
 	// in it.
@@ -150,18 +149,18 @@ func SubscribeOnionPayload(t *testing.T, ht *lntest.HarnessTest) {
 	}
 
 	_, err = offersTest.aliceOffers.SendOnionMessage(ctxt, req)
-	require.NoError(t, err, "send 2 payloads")
+	require.NoError(ht.T, err, "send 2 payloads")
 
 	// Assert that both clients received the correct payload.
 	consumeMessage(client1)
 	payloadReceived, err = receiveMessage()
-	require.NoError(t, err)
-	require.Equal(t, payload1, payloadReceived.Value)
-	assertBlindedPathEqual(t, req.ReplyPath, payloadReceived.ReplyPath)
+	require.NoError(ht.T, err)
+	require.Equal(ht.T, payload1, payloadReceived.Value)
+	assertBlindedPathEqual(ht.T, req.ReplyPath, payloadReceived.ReplyPath)
 
 	consumeMessage(client2)
 	payloadReceived, err = receiveMessage()
-	require.NoError(t, err)
-	require.Equal(t, payload2, payloadReceived.Value)
-	assertBlindedPathEqual(t, req.ReplyPath, payloadReceived.ReplyPath)
+	require.NoError(ht.T, err)
+	require.Equal(ht.T, payload2, payloadReceived.Value)
+	assertBlindedPathEqual(ht.T, req.ReplyPath, payloadReceived.ReplyPath)
 }
