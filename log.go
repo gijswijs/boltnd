@@ -1,6 +1,9 @@
 package boltnd
 
-import "github.com/btcsuite/btclog"
+import (
+	"github.com/btcsuite/btclog/v2"
+	"github.com/lightningnetwork/lnd/build"
+)
 
 // LogRegistration is the function signature used to register loggers.
 type LogRegistration func(logger btclog.Logger)
@@ -11,7 +14,12 @@ const Subsystem = "B12-OFRS"
 // log is a logger that is initialized with no output filters.  This
 // means the package will not perform any logging by default until the caller
 // requests it.
-var log = btclog.Disabled
+var log btclog.Logger
+
+// The default amount of logging is none.
+func init() {
+	UseLogger(build.NewSubLogger(Subsystem, nil))
+}
 
 // DisableLog disables all library log output.  Logging output is disabled
 // by default until UseLogger is called.

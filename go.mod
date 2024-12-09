@@ -9,10 +9,10 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
-	github.com/btcsuite/btclog v0.0.0-20241003133417-09c4e92e319c
-	github.com/lightninglabs/lndclient v0.18.4-7
+	github.com/btcsuite/btclog/v2 v2.0.0
+	github.com/lightninglabs/lndclient v1.0.1-0.20241031082205-9c87f640ce2c
 	github.com/lightningnetwork/lightning-onion v1.2.1-0.20240712235311-98bd56499dfb
-	github.com/lightningnetwork/lnd v0.18.4-beta.rc1
+	github.com/lightningnetwork/lnd v0.18.0-beta.rc4.0.20241203104703-ff2a1a4bbb90
 	github.com/lightningnetwork/lnd/tlv v1.2.6
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/grpc v1.59.0
@@ -31,7 +31,8 @@ require (
 	github.com/aead/siphash v1.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/btcsuite/btcd/btcutil/psbt v1.1.8 // indirect
-	github.com/btcsuite/btcwallet v0.16.10-0.20240912233857-ffb143c77cc5 // indirect
+	github.com/btcsuite/btclog v0.0.0-20241003133417-09c4e92e319c // indirect
+	github.com/btcsuite/btcwallet v0.16.10-0.20241113134707-b4ff60753aaa // indirect
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.5 // indirect
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.2 // indirect
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.5 // indirect
@@ -95,19 +96,20 @@ require (
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/juju/loggo v0.0.0-20210728185423-eebad3a902c4 // indirect
 	github.com/kkdai/bstream v1.0.0 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/lightninglabs/gozmq v0.0.0-20191113021534-d20a764486bf // indirect
 	github.com/lightninglabs/neutrino v0.16.1-0.20240425105051-602843d34ffd // indirect
 	github.com/lightninglabs/neutrino/cache v1.1.2 // indirect
 	github.com/lightningnetwork/lnd/cert v1.2.2 // indirect
 	github.com/lightningnetwork/lnd/clock v1.1.1 // indirect
-	github.com/lightningnetwork/lnd/fn v1.2.3 // indirect
-	github.com/lightningnetwork/lnd/healthcheck v1.2.5 // indirect
-	github.com/lightningnetwork/lnd/kvdb v1.4.10 // indirect
+	github.com/lightningnetwork/lnd/fn v1.2.5 // indirect
+	github.com/lightningnetwork/lnd/healthcheck v1.2.6 // indirect
+	github.com/lightningnetwork/lnd/kvdb v1.4.11 // indirect
 	github.com/lightningnetwork/lnd/queue v1.1.1 // indirect
-	github.com/lightningnetwork/lnd/sqldb v1.0.4 // indirect
+	github.com/lightningnetwork/lnd/sqldb v1.0.5 // indirect
 	github.com/lightningnetwork/lnd/ticker v1.1.1 // indirect
-	github.com/lightningnetwork/lnd/tor v1.1.2 // indirect
+	github.com/lightningnetwork/lnd/tor v1.1.4 // indirect
 	github.com/ltcsuite/ltcd v0.0.0-20190101042124-f37f8bf35796 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
