@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/gijswijs/boltnd/lnwire"
 	"github.com/gijswijs/boltnd/routes"
 	"github.com/lightninglabs/lndclient"
@@ -172,14 +171,14 @@ type Messenger struct {
 }
 
 // NewOnionMessenger creates a new onion messenger.
-func NewOnionMessenger(params *chaincfg.Params, lnd LndOnionMsg,
+func NewOnionMessenger(lnd LndOnionMsg,
 	nodeKeyECDH sphinx.SingleKeyECDH,
 	shutdown func(error)) *Messenger {
 
 	return &Messenger{
 		lnd: lnd,
 		router: sphinx.NewRouter(
-			nodeKeyECDH, params, sphinx.NewMemoryReplayLog(),
+			nodeKeyECDH, sphinx.NewMemoryReplayLog(),
 		),
 		nodeKeyECDH:         nodeKeyECDH,
 		lookupPeerBackoff:   lookupPeerBackoffDefault,
@@ -730,7 +729,8 @@ func (m *Messenger) processOnion(data []byte) (*btcec.PublicKey,
 	}
 
 	processed, err := m.router.ProcessOnionPacket(
-		onionPkt, nil, 0, onionMsg.BlindingPoint,
+		onionPkt, nil, 0,
+		sphinx.WithBlindingPoint(onionMsg.BlindingPoint),
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("process packet: %w", err)

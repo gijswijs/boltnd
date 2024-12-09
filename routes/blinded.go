@@ -113,7 +113,7 @@ func (b *BlindedRouteGenerator) ReplyPath(ctx context.Context,
 // TODO - this has terrible privacy, fill in more nodes (or dummies) between
 // us and the intro node.
 func buildBlindedRoute(relayingPeers []*lndclient.NodeInfo,
-	ourPubkey *btcec.PublicKey) ([]*sphinx.BlindedPathHop, error) {
+	ourPubkey *btcec.PublicKey) ([]*sphinx.HopInfo, error) {
 
 	if len(relayingPeers) == 0 {
 		return nil, ErrNoRelayingPeers
@@ -144,14 +144,14 @@ func buildBlindedRoute(relayingPeers []*lndclient.NodeInfo,
 		return nil, fmt.Errorf("intro payload: %w", err)
 	}
 
-	return []*sphinx.BlindedPathHop{
+	return []*sphinx.HopInfo{
 		{
-			NodePub: introNode,
-			Payload: introPayloadBytes,
+			NodePub:   introNode,
+			PlainText: introPayloadBytes,
 		},
 		{
-			NodePub: ourPubkey,
-			Payload: nil,
+			NodePub:   ourPubkey,
+			PlainText: nil,
 		},
 	}, nil
 }
@@ -278,7 +278,7 @@ type BlindedRouteRequest struct {
 	finalPayloads []*lnwire.FinalHopPayload
 
 	// blindPath blinds the set of hops provided.
-	blindPath func(*btcec.PrivateKey, []*sphinx.BlindedPathHop) (
+	blindPath func(*btcec.PrivateKey, []*sphinx.HopInfo) (
 		*sphinx.BlindedPath, error)
 
 	// encodeBlindedData encodes data for blinded route blobs.
@@ -498,15 +498,15 @@ type blindedStart struct {
 // Note that this function currently sends empty onion messages to peers (no
 // TLVs in the final hop).
 func createPathToBlind(path []*btcec.PublicKey, blindedStart *blindedStart,
-	encodePayload encodeBlindedPayload) ([]*sphinx.BlindedPathHop, error) {
+	encodePayload encodeBlindedPayload) ([]*sphinx.HopInfo, error) {
 
 	hopCount := len(path)
 
 	// Create a set of blinded hops for our path.
-	hopsToBlind := make([]*sphinx.BlindedPathHop, len(path))
+	hopsToBlind := make([]*sphinx.HopInfo, len(path))
 
 	// Create our first hop, which it the introduction node.
-	hopsToBlind[0] = &sphinx.BlindedPathHop{
+	hopsToBlind[0] = &sphinx.HopInfo{
 		NodePub: path[0],
 	}
 
@@ -521,14 +521,14 @@ func createPathToBlind(path []*btcec.PublicKey, blindedStart *blindedStart,
 		}
 
 		var err error
-		hopsToBlind[i-1].Payload, err = encodePayload(data)
+		hopsToBlind[i-1].PlainText, err = encodePayload(data)
 		if err != nil {
 			return nil, fmt.Errorf("intermediate node: %v "+
 				"encoding failed: %w", i, err)
 		}
 
 		// Add our hop to the set of blinded hops.
-		hopsToBlind[i] = &sphinx.BlindedPathHop{
+		hopsToBlind[i] = &sphinx.HopInfo{
 			NodePub: path[i],
 		}
 	}
@@ -543,7 +543,7 @@ func createPathToBlind(path []*btcec.PublicKey, blindedStart *blindedStart,
 		}
 
 		var err error
-		hopsToBlind[hopCount-1].Payload, err = encodePayload(data)
+		hopsToBlind[hopCount-1].PlainText, err = encodePayload(data)
 		if err != nil {
 			return nil, fmt.Errorf("ephemeral switch out node: %v",
 				err)
@@ -564,7 +564,7 @@ func blindedToSphinx(blindedRoute *sphinx.BlindedPath,
 	var (
 		sphinxPath sphinx.PaymentPath
 
-		ourHopCount   = len(blindedRoute.EncryptedData)
+		ourHopCount   = len(blindedRoute.BlindedHops)
 		extraHopCount = len(extraHops)
 	)
 
@@ -577,7 +577,7 @@ func blindedToSphinx(blindedRoute *sphinx.BlindedPath,
 		// Create an onion message payload with the encrypted data for
 		// this hop.
 		payload := &lnwire.OnionMessagePayload{
-			EncryptedData: blindedRoute.EncryptedData[i],
+			EncryptedData: blindedRoute.BlindedHops[i].CipherText,
 		}
 
 		// If we're on the final hop and there are no extra hops to add
@@ -590,7 +590,7 @@ func blindedToSphinx(blindedRoute *sphinx.BlindedPath,
 
 		// Encode the tlv stream for inclusion in our message.
 		hop, err := createSphinxHop(
-			*blindedRoute.BlindedHops[i], payload,
+			*blindedRoute.BlindedHops[i].BlindedNodePub, payload,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("sphinx hop %v: %w", i, err)
