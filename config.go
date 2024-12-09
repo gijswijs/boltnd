@@ -26,8 +26,8 @@ const (
 // MinimumLNDVersion is the minimum lnd version and set of build tags required.
 var MinimumLNDVersion = &verrpc.Version{
 	AppMajor: 0,
-	AppMinor: 15,
-	AppPatch: 0,
+	AppMinor: 18,
+	AppPatch: 99,
 	BuildTags: []string{
 		"signrpc", "walletrpc", "chainrpc", "invoicesrpc",
 		// TODO(carla): lnd's itests don't set this build tag, but

@@ -3,7 +3,6 @@ package itest
 import (
 	"context"
 	"sync"
-	"testing"
 	"time"
 
 	"github.com/gijswijs/boltnd/lnwire"
@@ -14,8 +13,8 @@ import (
 )
 
 // OnionMessageTestCase tests the exchange of onion messages.
-func OnionMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
-	offersTest := setupForBolt12(t, ht)
+func OnionMessageTestCase(ht *lntest.HarnessTest) {
+	offersTest := setupForBolt12(ht)
 	defer offersTest.cleanup()
 
 	var (
@@ -44,7 +43,7 @@ func OnionMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 		DirectConnect: true,
 	}
 	_, err := offersTest.aliceOffers.SendOnionMessage(ctxt, req)
-	require.NoError(t, err, "send onion message")
+	require.NoError(ht.T, err, "send onion message")
 	cancel()
 
 	// We don't want our test to block if we don't receive, so we buffer
@@ -78,18 +77,18 @@ func OnionMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 		// If we receive a message as expected, assert that it is of
 		// the correct type.
 		case msg := <-msgChan:
-			require.Equal(t, uint32(lnwire.OnionMessageType),
+			require.Equal(ht.T, uint32(lnwire.OnionMessageType),
 				msg.Type)
 
 		// If we received an error, something went wrong.
 		case err := <-errChan:
-			t.Fatalf("message not received: %v", err)
+			ht.T.Fatalf("message not received: %v", err)
 
 		// In the case of a timeout, let our test exit. This will
 		// cancel the receive goroutine (through context cancelation)
 		// and wait for it to exit.
 		case <-time.After(defaultTimeout):
-			t.Fatal("message not received within timeout")
+			ht.T.Fatal("message not received within timeout")
 		}
 	}
 
@@ -106,7 +105,7 @@ func OnionMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 
 	// We're going to open a channel between Alice and Bob, so that they
 	// become part of the public graph.
-	openChannelAndAnnounce(t, ht, ht.Alice, ht.Bob, carol)
+	AliceBobChanPoint := openChannelAndAnnounce(ht, ht.Alice, ht.Bob, carol)
 
 	// We now have the following setup:
 	//  Alice --- (channel) ---- Bob
@@ -117,7 +116,7 @@ func OnionMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 	//
 	// Carol should be able to send an onion message to Bob by looking
 	// him up in the graph and sending to his public address.
-	carolB12, cleanup := bolt12Client(t, carol)
+	carolB12, cleanup := bolt12Client(ht.T, carol)
 	defer cleanup()
 
 	ctxt, cancel = context.WithTimeout(ctxb, defaultTimeout)
@@ -126,7 +125,7 @@ func OnionMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 		DirectConnect: true,
 	}
 	_, err = carolB12.SendOnionMessage(ctxt, req)
-	require.NoError(t, err, "carol message")
+	require.NoError(ht.T, err, "carol message")
 	cancel()
 
 	// Listen for a message from Carol -> Bob and wait to receive it.
@@ -139,7 +138,7 @@ func OnionMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 
 	ctxt, cancel = context.WithTimeout(ctxb, defaultTimeout)
 	_, err = offersTest.aliceOffers.SendOnionMessage(ctxt, req)
-	require.NoError(t, err, "alice -> bob no direct connect")
+	require.NoError(ht.T, err, "alice -> bob no direct connect")
 	cancel()
 
 	receiveMessage()
@@ -148,14 +147,14 @@ func OnionMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 	// Now open a channel from Carol -> Alice so that we have the following
 	// network structure:
 	// Carol --- Alice ---- Bob
-	openChannelAndAnnounce(t, ht, ht.Alice, carol, ht.Bob)
+	AliceCarolChanPoint := openChannelAndAnnounce(ht, ht.Alice, carol, ht.Bob)
 
 	// Generate a blinded path to Carol.
 	ctxt, cancel = context.WithTimeout(ctxb, defaultTimeout)
 	routeResp, err := carolB12.GenerateBlindedRoute(
 		ctxt, &offersrpc.GenerateBlindedRouteRequest{},
 	)
-	require.NoError(t, err, "carol blinded route")
+	require.NoError(ht.T, err, "carol blinded route")
 
 	// Send an onion message from Carol -> Bob including a reply path
 	// back to Carol.
@@ -167,10 +166,13 @@ func OnionMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 	}
 
 	_, err = carolB12.SendOnionMessage(ctxt, req)
-	require.NoError(t, err, "carol message")
+	require.NoError(ht.T, err, "carol message")
 	cancel()
 
 	// Listen for a message from Carol -> Bob and wait to receive it.
 	receiveMessage()
 	readMessage()
+
+	ht.CloseChannel(ht.Alice, AliceBobChanPoint)
+	ht.CloseChannel(ht.Alice, AliceCarolChanPoint)
 }

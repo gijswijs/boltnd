@@ -2,7 +2,6 @@ package itest
 
 import (
 	"context"
-	"testing"
 
 	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/lntest"
@@ -29,8 +28,8 @@ const (
 )
 
 // DecodeOfferTestCase tests decoding of offer strings.
-func DecodeOfferTestCase(t *testing.T, ht *lntest.HarnessTest) {
-	offersTest := setupForBolt12(t, ht)
+func DecodeOfferTestCase(ht *lntest.HarnessTest) {
+	offersTest := setupForBolt12(ht)
 	defer offersTest.cleanup()
 
 	ctxb := context.Background()
@@ -41,37 +40,37 @@ func DecodeOfferTestCase(t *testing.T, ht *lntest.HarnessTest) {
 	// we get an invalid argument error.
 	req := &offersrpc.DecodeOfferRequest{}
 	_, err := offersTest.aliceOffers.DecodeOffer(ctxt, req)
-	require.Error(t, err, "expect error for empty request")
+	require.Error(ht.T, err, "expect error for empty request")
 
 	status, ok := status.FromError(err)
-	require.True(t, ok, "grpc error required")
-	require.Equal(t, codes.InvalidArgument, status.Code(), err)
+	require.True(ht.T, ok, "grpc error required")
+	require.Equal(ht.T, codes.InvalidArgument, status.Code(), err)
 
 	// Next, test the case where we provide a valid offer string and
 	// successfully decode it.
 	req.Offer = offerStr
 
 	resp, err := offersTest.aliceOffers.DecodeOffer(ctxt, req)
-	require.NoError(t, err, "offer decode")
+	require.NoError(ht.T, err, "offer decode")
 
 	// The values for our expected offer are obtained from:
 	// https://bootstrap.bolt12.org/decode/{offerStr}
 	//
 	// Protos have some unexported fields that we can't set, so we check
 	// each expected field in the offer.
-	require.Equal(t, uint64(50), resp.Offer.MinAmountMsat, "min amount")
-	require.Equal(t, "50msat multi-quantity offer", resp.Offer.Description)
-	require.Equal(t, "rustcorp.com.au", resp.Offer.Issuer, "issuer")
-	require.Equal(t, uint64(1), resp.Offer.MinQuantity, "min quantity")
-	require.Equal(t, uint64(0), resp.Offer.MaxQuantity, "max quantity")
-	require.Equal(t, nodeIDStr, resp.Offer.NodeId, "node id")
-	require.Equal(t, "", resp.Offer.Signature, "signature")
+	require.Equal(ht.T, uint64(50), resp.Offer.MinAmountMsat, "min amount")
+	require.Equal(ht.T, "50msat multi-quantity offer", resp.Offer.Description)
+	require.Equal(ht.T, "rustcorp.com.au", resp.Offer.Issuer, "issuer")
+	require.Equal(ht.T, uint64(1), resp.Offer.MinQuantity, "min quantity")
+	require.Equal(ht.T, uint64(0), resp.Offer.MaxQuantity, "max quantity")
+	require.Equal(ht.T, nodeIDStr, resp.Offer.NodeId, "node id")
+	require.Equal(ht.T, "", resp.Offer.Signature, "signature")
 
 	// Next, test decoding of a signed offer.
 	req.Offer = signedOfferStr
 	resp, err = offersTest.aliceOffers.DecodeOffer(ctxt, req)
-	require.NoError(t, err, "signed offer decode")
+	require.NoError(ht.T, err, "signed offer decode")
 
-	require.Equal(t, "Offer by rusty's node", resp.Offer.Description)
-	require.Equal(t, nodeIDStr, resp.Offer.NodeId, "node id")
+	require.Equal(ht.T, "Offer by rusty's node", resp.Offer.Description)
+	require.Equal(ht.T, nodeIDStr, resp.Offer.NodeId, "node id")
 }

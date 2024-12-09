@@ -3,7 +3,6 @@ package itest
 import (
 	"context"
 	"sync"
-	"testing"
 
 	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/lntest"
@@ -11,8 +10,8 @@ import (
 )
 
 // ReplyMessageTestCase tests sending of onion messages to reply paths.
-func ReplyMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
-	offersTest := setupForBolt12(t, ht)
+func ReplyMessageTestCase(ht *lntest.HarnessTest) {
+	offersTest := setupForBolt12(ht)
 	defer offersTest.cleanup()
 
 	ctxb := context.Background()
@@ -24,7 +23,7 @@ func ReplyMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 
 	// We'll also need a bolt 12 client for dave, because he's going to be
 	// receiving our onion messages.
-	daveB12, cleanup := bolt12Client(t, dave)
+	daveB12, cleanup := bolt12Client(ht.T, dave)
 	defer cleanup()
 
 	// First we make p2p connections so that all the nodes can gossip
@@ -35,14 +34,14 @@ func ReplyMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 	ht.ConnectNodesPerm(carol, dave)
 
 	// Alice -> Bob
-	openChannelAndAnnounce(t, ht, ht.Alice, ht.Bob, carol, dave)
+	AliceBobChanPoint := openChannelAndAnnounce(ht, ht.Alice, ht.Bob, carol, dave)
 
 	// Bob -> Carol
-	openChannelAndAnnounce(t, ht, ht.Bob, carol, ht.Alice, dave)
+	BobCarolChanPoint := openChannelAndAnnounce(ht, ht.Bob, carol, ht.Alice, dave)
 
 	// Carol -> Dave
-	fundNode(ctxb, t, ht, carol)
-	openChannelAndAnnounce(t, ht, carol, dave, ht.Alice, ht.Bob)
+	fundNode(ctxb, ht, carol)
+	CarolDaveChanPoint := openChannelAndAnnounce(ht, carol, dave, ht.Alice, ht.Bob)
 
 	// Create a reply path to Dave's node.
 	ctxt, cancel := context.WithTimeout(ctxb, defaultTimeout)
@@ -50,7 +49,7 @@ func ReplyMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 		ctxt, &offersrpc.GenerateBlindedRouteRequest{},
 	)
 	cancel()
-	require.NoError(t, err, "reply path")
+	require.NoError(ht.T, err, "reply path")
 
 	// Now subscribe to onion payloads received by dave. We don't add a
 	// timeout on this subscription, but rather just cancel it at the end
@@ -62,7 +61,7 @@ func ReplyMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 		TlvType: 101,
 	}
 	client, err := daveB12.SubscribeOnionPayload(ctxc, subReq)
-	require.NoError(t, err, "subscription")
+	require.NoError(ht.T, err, "subscription")
 
 	var (
 		errChan = make(chan error, 1)
@@ -90,13 +89,17 @@ func ReplyMessageTestCase(t *testing.T, ht *lntest.HarnessTest) {
 	}
 
 	_, err = offersTest.aliceOffers.SendOnionMessage(ctxt, req)
-	require.NoError(t, err)
+	require.NoError(ht.T, err)
 	cancel()
 
 	// Read and receive the message from Dave's subscription and assert
 	// that we get the payload we expect.
 	consumeMessage(client)
 	msg, err := receiveMessage()
-	require.NoError(t, err, "receive message")
-	require.Equal(t, data, msg.Value)
+	require.NoError(ht.T, err, "receive message")
+	require.Equal(ht.T, data, msg.Value)
+
+	ht.CloseChannel(ht.Alice, AliceBobChanPoint)
+	ht.CloseChannel(ht.Bob, BobCarolChanPoint)
+	ht.CloseChannel(carol, CarolDaveChanPoint)
 }

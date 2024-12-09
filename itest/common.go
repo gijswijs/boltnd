@@ -100,20 +100,20 @@ func readOnionMessage(msgChan chan *offersrpc.SubscribeOnionPayloadResponse,
 // openChannelAndAnnounce opens a channel from initiator -> receiver, fully
 // confirming it and waiting until the initiator, recipient and optional set of
 // nodes in the network slice have seen the channel announcement.
-func openChannelAndAnnounce(t *testing.T, ht *lntest.HarnessTest,
+func openChannelAndAnnounce(ht *lntest.HarnessTest,
 	initiator, receiver *node.HarnessNode,
-	network ...*node.HarnessNode) {
+	network ...*node.HarnessNode) *lnrpc.ChannelPoint {
 
 	chanReq := lntest.OpenChannelParams{
 		Amt: 500_0000,
 	}
 
-	ht.OpenChannel(initiator, receiver, chanReq)
+	return ht.OpenChannel(initiator, receiver, chanReq)
 }
 
 // fundNode funds a node with 1BTC and waits for the balance to reflect in
 // its confirmed wallet balance.
-func fundNode(ctx context.Context, t *testing.T, ht *lntest.HarnessTest,
+func fundNode(ctx context.Context, ht *lntest.HarnessTest,
 	node *node.HarnessNode) {
 
 	walletResp := node.RPC.WalletBalance()
@@ -127,10 +127,10 @@ func fundNode(ctx context.Context, t *testing.T, ht *lntest.HarnessTest,
 	resp := node.RPC.NewAddress(addrReq)
 
 	addr, err := btcutil.DecodeAddress(resp.Address, node.Cfg.NetParams)
-	require.NoError(t, err, "decode addr")
+	require.NoError(ht.T, err, "decode addr")
 
 	addrScript, err := txscript.PayToAddrScript(addr)
-	require.NoError(t, err, "pay to addr")
+	require.NoError(ht.T, err, "pay to addr")
 
 	output := &wire.TxOut{
 		PkScript: addrScript,
@@ -138,12 +138,12 @@ func fundNode(ctx context.Context, t *testing.T, ht *lntest.HarnessTest,
 	}
 
 	_, err = ht.Miner().SendOutputs([]*wire.TxOut{output}, 7500)
-	require.NoError(t, err, "send outputs")
+	require.NoError(ht.T, err, "send outputs")
 
 	_, err = ht.Miner().Client.Generate(6)
-	require.NoError(t, err, "generate")
+	require.NoError(ht.T, err, "generate")
 
-	require.Eventually(t, func() bool {
+	require.Eventually(ht.T, func() bool {
 
 		walletResp = node.RPC.WalletBalance()
 

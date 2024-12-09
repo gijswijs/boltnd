@@ -3,7 +3,6 @@ package itest
 import (
 	"context"
 	"sync"
-	"testing"
 
 	"github.com/gijswijs/boltnd/offersrpc"
 	"github.com/lightningnetwork/lnd/lntest"
@@ -11,14 +10,14 @@ import (
 )
 
 // OnionMsgForwardTestCase tests forwarding of onion messages.
-func OnionMsgForwardTestCase(t *testing.T, ht *lntest.HarnessTest) {
-	offersTest := setupForBolt12(t, ht)
+func OnionMsgForwardTestCase(ht *lntest.HarnessTest) {
+	offersTest := setupForBolt12(ht)
 	defer offersTest.cleanup()
 
 	// Spin up a third node immediately because we will need a three-hop
 	// network for this test.
 	carol := ht.NewNode("carol", []string{onionMsgProtocolOverride})
-	carolB12, cleanup := bolt12Client(t, carol)
+	carolB12, cleanup := bolt12Client(ht.T, carol)
 	defer cleanup()
 
 	// Connect nodes before channel opening so that they can share gossip.
@@ -27,8 +26,8 @@ func OnionMsgForwardTestCase(t *testing.T, ht *lntest.HarnessTest) {
 
 	// Open channels: Alice --- Bob --- Carol and wait for each node to
 	// sync the network graph.
-	openChannelAndAnnounce(t, ht, ht.Alice, ht.Bob, carol)
-	openChannelAndAnnounce(t, ht, ht.Bob, carol, ht.Alice)
+																									AliceBobChanPoint := openChannelAndAnnounce(ht, ht.Alice, ht.Bob, carol)
+	BobCarolChanPoint := openChannelAndAnnounce(ht, ht.Bob, carol, ht.Alice)
 
 	var (
 		ctxb = context.Background()
@@ -54,7 +53,7 @@ func OnionMsgForwardTestCase(t *testing.T, ht *lntest.HarnessTest) {
 	client, err := carolB12.SubscribeOnionPayload(
 		ctxc, subReq,
 	)
-	require.NoError(t, err)
+	require.NoError(ht.T, err)
 
 	// Setup closures to receive from Carol's subscription.
 	var (
@@ -80,13 +79,16 @@ func OnionMsgForwardTestCase(t *testing.T, ht *lntest.HarnessTest) {
 	}
 
 	_, err = offersTest.aliceOffers.SendOnionMessage(ctxt, req)
-	require.NoError(t, err, "alice -> carol message")
+	require.NoError(ht.T, err, "alice -> carol message")
 	cancel()
 
 	// Read the message from our subscription and assert that we have the
 	// payload we expect.
 	consumeMessage(client)
 	onionMsg, err := receiveMessage()
-	require.NoError(t, err)
-	require.Equal(t, tlvPayload, onionMsg.Value)
+	require.NoError(ht.T, err)
+	require.Equal(ht.T, tlvPayload, onionMsg.Value)
+
+	ht.CloseChannel(ht.Alice, AliceBobChanPoint)
+	ht.CloseChannel(ht.Bob, BobCarolChanPoint)
 }
